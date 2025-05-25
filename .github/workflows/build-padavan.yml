@@ -45,7 +45,11 @@ jobs:
         sh dl_toolchain.sh
         mkdir -p /opt/images/
         echo "DATE=$(date "+%Y-%m-%d")" >> $GITHUB_ENV
-
+        # 添加UA2F插件
+        cd /opt/rt-n56u/trunk/user
+        git clone https://github.com/zhuang-zx2018/UA2F.git
+        ln -sf ../user/UA2F ua2f  # 创建符号链接确保编译系统识别
+        
     - name: Build Firmware
       run: |
         cd /opt/rt-n56u/trunk
@@ -64,6 +68,7 @@ jobs:
         ###################################################################################################
         # 因不同型号配置功能不一样，所以先把配置项删除，如果你自己要添加其他的，也要写上删除这一条，切记！！！
         ###################################################################################################
+        sed -i '/CONFIG_FIRMWARE_INCLUDE_UA2F/d' configs/templates/$TNAME.config
         sed -i '/CONFIG_FIRMWARE_INCLUDE_LANG_UK/d' configs/templates/$TNAME.config      #删除配置项英文界面
         sed -i '/CONFIG_FIRMWARE_INCLUDE_QOS/d' configs/templates/$TNAME.config          #删除配置项QOS
         sed -i '/CONFIG_FIRMWARE_INCLUDE_SMBD36/d' configs/templates/$TNAME.config       #删除配置项SMBD36
@@ -95,6 +100,13 @@ jobs:
         ####################################################################
         # 以下选项是定义你需要的功能（y=集成,n=忽略），重新写入到.config文件。
         ####################################################################
+        echo "CONFIG_FIRMWARE_INCLUDE_UA2F=y" >> configs/templates/$TNAME.config         #设置ua2f
+        # 添加Netfilter依赖配置
+        echo "CONFIG_KERNEL_NETFILTER_NETLINK=y" >> configs/templates/$TNAME.config
+        echo "CONFIG_KERNEL_NETFILTER_NETLINK_QUEUE=y" >> configs/templates/$TNAME.config
+        echo "CONFIG_KERNEL_NF_CONNTRACK=y" >> configs/templates/$TNAME.config
+        echo "CONFIG_KERNEL_NF_CONNTRACK_EVENTS=y" >> configs/templates/$TNAME.config
+        
         echo "CONFIG_FIRMWARE_INCLUDE_LANG_CN=y" >> configs/templates/$TNAME.config      #设置界面简体中文
         echo "CONFIG_FIRMWARE_INCLUDE_QOS=n" >> configs/templates/$TNAME.config          #删除QOS
         echo "CONFIG_FIRMWARE_INCLUDE_SMBD36=y" >> configs/templates/$TNAME.config       #使用SMBD36新版本
